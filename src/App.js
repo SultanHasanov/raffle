@@ -10,6 +10,8 @@ const RaffleForm = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const inputRef = useRef(null);
+  const [form] = Form.useForm();
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const handleAdminClick = () => {
     setIsModalVisible(true); // Открываем модальное окно
   };
@@ -42,26 +44,44 @@ const RaffleForm = () => {
   };
 
   const onFinish = async (values) => {
-    if (!number) {
-      notification.error({ message: 'Нет свободных номерков.' });
-      return;
-    }
-
     try {
+      // Проверка, существует ли номер телефона в базе данных пользователей
+      const usersResponse = await axios.get('https://2323e73ee73ce4dc.mokky.dev/user');
+      const userExists = usersResponse.data.some(user => user.phone === values.phone);
+  
+      if (userExists) {
+        notification.warning({
+          message: 'Ошибка',
+          description: 'Этот номер уже участвует в розыгрыше. Пожалуйста, введите другой номер.',
+        });
+        return; // Прерываем выполнение функции, если номер уже существует
+      }
+  
+      // Проверка наличия свободных номерков
+      if (!number) {
+        notification.error({ message: 'Нет свободных номерков.' });
+        return;
+      }
+  
+      // Отправка данных на сервер
       await axios.post('https://2323e73ee73ce4dc.mokky.dev/user', { ...values, number: number.number });
+      
+      // Обновляем статус номера на 'busy'
       await axios.patch(`https://2323e73ee73ce4dc.mokky.dev/number/${number.id}`, { busy: true });
-
+  
+      // Формируем сообщение для WhatsApp
       const whatsappMessage = `Поздравляем!🎉 Вы участвуете в розыгрыше\nНовый участник:\nФамилия: ${values.surname}\nИмя: ${values.name}\nТелефон: ${values.phone}\nНомер: ${number.number}`;
       window.open(`https://wa.me/+79667283100?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
-
+  
       notification.success({ message: 'Заявка отправлена!' });
-      fetchNumber();
+      setIsSubmitted(true); 
+      fetchNumber(); // Обновляем список доступных номерков
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Ошибка при отправке заявки:', error);
       notification.error({ message: 'Ошибка при отправке заявки.' });
     }
   };
-
+  
   useEffect(() => {
     fetchNumber();
   }, []);
@@ -77,11 +97,14 @@ const RaffleForm = () => {
     }
   }, [isModalVisible]);
 
+  if (isSubmitted) {
+    return <div>Вы отправили форму и участвуете в розыгрыше.</div>; // Сообщение об успешной отправке
+  }
   return (
     <div style={{ padding: '24px' }}>
       <h2>Розыгрыш</h2>
       <p>Заполните форму ниже, чтобы участвовать в розыгрыше.</p>
-      <Form layout="vertical" onFinish={onFinish}>
+      <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item label="Фамилия" name="surname" rules={[{ required: true, message: 'Введите фамилию' }]}>
           <Input />
         </Form.Item>

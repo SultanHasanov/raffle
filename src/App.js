@@ -51,8 +51,8 @@ const RaffleForm = () => {
       await axios.post('https://2323e73ee73ce4dc.mokky.dev/user', { ...values, number: number.number });
       await axios.patch(`https://2323e73ee73ce4dc.mokky.dev/number/${number.id}`, { busy: true });
 
-      const whatsappMessage = `Новый участник:\nФамилия: ${values.surname}\nИмя: ${values.name}\nТелефон: ${values.phone}\nНомер: ${number.number}`;
-      window.open(`https://wa.me/номер_админа?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+      const whatsappMessage = `Поздравляем!🎉 Вы участвуете в розыгрыше\nНовый участник:\nФамилия: ${values.surname}\nИмя: ${values.name}\nТелефон: ${values.phone}\nНомер: ${number.number}`;
+      window.open(`https://wa.me/+79667283100?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
       notification.success({ message: 'Заявка отправлена!' });
       fetchNumber();
